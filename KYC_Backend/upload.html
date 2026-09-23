@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Upload Document — KYC System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <div class="top-bar">
+      <h1>Submit KYC Document</h1>
+      <span class="logout-link" id="logoutBtn">Log out</span>
+    </div>
+    <p class="subtitle">Upload your ID and a live selfie for verification</p>
+
+    <form id="uploadForm">
+      <label>Document type</label>
+      <select id="document_type" required>
+        <option value="">Select type</option>
+        <option value="citizenship">Citizenship</option>
+        <option value="passport">Passport</option>
+        <option value="license">License</option>
+      </select>
+
+      <label>ID document (JPEG/PNG)</label>
+      <input type="file" id="document" accept="image/jpeg,image/png" required>
+
+      <label>Selfie (JPEG/PNG)</label>
+      <input type="file" id="selfie" accept="image/jpeg,image/png" required>
+
+      <button type="submit">Submit for review</button>
+      <div class="msg" id="msg"></div>
+    </form>
+
+    <div class="footer-link"><a href="status.html">Check verification status →</a></div>
+  </div>
+
+<script src="config.js"></script>
+<script>
+const form = document.getElementById('uploadForm');
+const msg = document.getElementById('msg');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  const formData = new FormData();
+  formData.append('document_type', document.getElementById('document_type').value);
+  formData.append('document', document.getElementById('document').files[0]);
+  formData.append('selfie', document.getElementById('selfie').files[0]);
+
+  try {
+    const res = await fetch(`${API_BASE}/upload_document.php`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      msg.className = 'msg success';
+      msg.textContent = 'Document submitted! Redirecting to status page...';
+      setTimeout(() => window.location.href = 'status.html', 1200);
+    } else {
+      msg.className = 'msg error';
+      msg.textContent = data.error || 'Upload failed';
+    }
+  } catch (err) {
+    msg.className = 'msg error';
+    msg.textContent = 'Could not reach the server';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/logout.php`, { method: 'POST', credentials: 'include' });
+  window.location.href = 'login.html';
+});
+</script>
+</body>
+</html>

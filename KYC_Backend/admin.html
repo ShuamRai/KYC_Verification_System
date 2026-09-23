@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Review — KYC System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card wide">
+    <div class="top-bar">
+      <h1>Pending Reviews</h1>
+      <span class="logout-link" id="logoutBtn">Log out</span>
+    </div>
+    <p class="subtitle">Documents awaiting approval or rejection</p>
+
+    <div id="list">Loading...</div>
+  </div>
+
+<script src="config.js"></script>
+<script>
+async function loadQueue() {
+  const list = document.getElementById('list');
+  try {
+    const res = await fetch(`${API_BASE}/admin_review.php`, { credentials: 'include' });
+    const data = await res.json();
+
+    if (!data.success) {
+      list.innerHTML = `<div class="msg error" style="display:block">${data.error || 'Could not load queue'}</div>`;
+      return;
+    }
+
+    if (data.documents.length === 0) {
+      list.innerHTML = `<p class="subtitle">No pending documents. All caught up.</p>`;
+      return;
+    }
+
+    list.innerHTML = data.documents.map(doc => `
+      <div class="admin-row">
+        <div>
+          <strong>${doc.full_name}</strong> — ${doc.email}<br>
+          <span style="color:#94a3b8;font-size:13px">${doc.document_type} · face match: ${doc.face_match_score ?? 'N/A'}</span>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-approve" onclick="review(${doc.id}, 'approved')">Approve</button>
+          <button class="btn-reject" onclick="review(${doc.id}, 'rejected')">Reject</button>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    list.innerHTML = `<div class="msg error" style="display:block">Could not reach the server</div>`;
+  }
+}
+
+async function review(documentId, decision) {
+  try {
+    const res = await fetch(`${API_BASE}/admin_review.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_id: documentId, decision }),
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadQueue();
+    } else {
+      alert(data.error || 'Action failed');
+    }
+  } catch (err) {
+    alert('Could not reach the server');
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/logout.php`, { method: 'POST', credentials: 'include' });
+  window.location.href = 'login.html';
+});
+
+loadQueue();
+</script>
+</body>
+</html>

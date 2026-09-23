@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verification Status — KYC System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card wide">
+    <div class="top-bar">
+      <h1>Your Verification Status</h1>
+      <span class="logout-link" id="logoutBtn">Log out</span>
+    </div>
+    <p class="subtitle">Track the status of your submitted documents</p>
+
+    <div id="list">Loading...</div>
+    <div class="footer-link"><a href="upload.html">Submit another document →</a></div>
+  </div>
+
+<script src="config.js"></script>
+<script>
+async function loadStatus() {
+  const list = document.getElementById('list');
+  try {
+    const res = await fetch(`${API_BASE}/check_status.php`, { credentials: 'include' });
+    const data = await res.json();
+
+    if (!data.success) {
+      list.innerHTML = `<div class="msg error" style="display:block">${data.error || 'Could not load status'}</div>`;
+      return;
+    }
+
+    if (data.documents.length === 0) {
+      list.innerHTML = `<p class="subtitle">No documents submitted yet.</p>`;
+      return;
+    }
+
+    list.innerHTML = data.documents.map(doc => `
+      <div class="status-row">
+        <div>
+          <strong>${doc.document_type}</strong><br>
+          <span style="color:#94a3b8">Submitted: ${new Date(doc.uploaded_at).toLocaleString()}</span>
+        </div>
+        <span class="badge ${doc.status}">${doc.status.replace('_', ' ')}</span>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    list.innerHTML = `<div class="msg error" style="display:block">Could not reach the server</div>`;
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/logout.php`, { method: 'POST', credentials: 'include' });
+  window.location.href = 'login.html';
+});
+
+loadStatus();
+</script>
+</body>
+</html>
